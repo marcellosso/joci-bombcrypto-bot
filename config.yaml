@@ -1,6 +1,8 @@
 system:
   mouse_speed: 0.03
   scroll_speed: 1
+  game_width: 941
+  game_height: 468
 update:
   enable_update_positions: true
   send_all_heroes_to_work: false

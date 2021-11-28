@@ -456,9 +456,14 @@ def sendMapReport():
         return
 
     x, y, _, _ = back[0]
+    newY0 = y + 65
+    newY1 = newY0 + system_data["game_height"]
+    newX0 = x - 35
+    newX1 = newX0 + system_data["game_width"]
+
     with mss.mss() as sct:
         sct_img = np.array(sct.grab(sct.monitors[0]))
-        crop_img = sct_img[y+65:812, x-35:1442]
+        crop_img = sct_img[newY0:newY1, newX0:newX1]
         resized = cv2.resize(crop_img, (500, 250))
 
         cv2.imwrite('map-report.png', resized)
