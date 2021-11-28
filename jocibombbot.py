@@ -8,11 +8,10 @@ import sys
 import random
 from datetime import datetime
 import wmi
-import os
 import webbrowser
 import telegram
-import imutils
 import requests
+from yaml import load, Loader
 
 # Load all assets from the game
 assign_metamask_button =cv2.imread('target_images/assign-metamask-button.png')
@@ -60,32 +59,26 @@ print(cat)
 ### CONFIG VARIABLES ###################################################################################################################
 
 pyautogui.PAUSE = 0
-#pyautogui.MINIMUM_DURATION = 0
-#pyautogui.MINIMUM_SLEEP = 0
 pyautogui.FAILSAFE = True
-
-telegram_id = "1638698078"                                          # Telegram user id set False to disabled it
-telegram_bot_key = "2074203683:AAGdATNCF_28GVAhHNEZnrjKWTdwZsmmcBU" # Telegram bot key
-
-metamask_password = "#####"        # DANGER!! Be careful don't share this, please !!!!!!
-
-send_all_heroes_to_work = False               # Set to true to put all heroes to work, even without green bar
-send_all_heroes_with_green_bar_to_work = True # Set to true to put all heroes with green bar to work
-send_all_heroes_with_full_bar_to_work = False # Set to true to put all heroes with FULL green bar to work
-super_only_with_full_bar = False              # Set to true to put the heroes only with FULL green bar
-enable_update_positions = True                # Set to true to enable the heroes position updates
-mouse_speed = 0.25                            # Speed of the mouse
-scroll_speed = 1                              # Speed of the scroll list
-time_update = 3 #min                          # Global time update to find errors or unusual comportament
-time_heroes_position_update = 5 #min          # Time to update the heroes position     
-time_send_heroes_to_work = 20 #min            # Time to send heroes to work
-offset_button = 130                           # Offset from the green bar to the work button
-offset_button_full = 100                      # Offset from the FULL green bar to the work button
 
 ### INITIALIZING SYSTEM #################################################################################################################
 
+# Load config data
+data = []
+with open('config.yaml') as f:
+    data = load(f, Loader=Loader)
+
+if data:
+    print("Config loaded!")
+
+telegram_data = data["telegram"]
+system_data = data["system"]
+update_data = data["update"]
+metamask_data = data["metamask"]
+offset_data = data["offset"]
+    
 # Initialize telegram
-bot = telegram.Bot(token=telegram_bot_key)
+bot = telegram.Bot(token=telegram_data["telegram_bot_key"])
 
 #Initialize windows process monitor
 f = wmi.WMI()
@@ -128,7 +121,7 @@ def randonMouseMove(dest_x, dest_y, G_0=9, W_0=3, M_0=15, D_0=12, move_mouse=lam
         if current_x != move_x or current_y != move_y:
             #This should wait for the mouse polling interval
             pyautogui.moveTo(move_x, move_y)
-            pyautogui.sleep(0.03)
+            pyautogui.sleep(system_data["mouse_speed"])
 
     time.sleep(1)
     return current_x,current_y
@@ -260,8 +253,8 @@ def log(message, telegram = False):
 
 # Send telegram message
 def sendTelegramMessage(message):
-    if(telegram_id is not False):
-        bot.send_message(text=message, chat_id=telegram_id)
+    if(telegram_data["telegram_chat_id"] is not False):
+        bot.send_message(text=message, chat_id=telegram_data["telegram_chat_id"])
 
 # Get randon number from 1 to 12
 def getRandonSeconds():
@@ -327,7 +320,7 @@ def clickInAllHeroes(passSuper = False):
 
         for (x, y, _, _) in heroes_to_work:
             increaseHeroesToWorkCount()
-            randonMouseMove(x + offset_button + getRandonPixels(), y + getRandonPixels())
+            randonMouseMove(x + offset_data["work_button"] + getRandonPixels(), y + getRandonPixels())
             pyautogui.click()
             error = hasModalHeroesError()
             if error is not False:
@@ -355,7 +348,7 @@ def clickInAllHeroesWithGreenBar(passSuper = False):
         
         for (x, y, _, _) in heroes_to_work:
             increaseHeroesToWorkCount()
-            randonMouseMove(x + offset_button + getRandonPixels(), y + getRandonPixels())
+            randonMouseMove(x + offset_data["work_button"] + getRandonPixels(), y + getRandonPixels())
             pyautogui.click()
             time.sleep(1)
             error = hasModalHeroesError()
@@ -378,7 +371,7 @@ def clickInAllHeroesWithFullGreenBar():
         
         for (x, y, _, _) in heroes_to_work:
             increaseHeroesToWorkCount()
-            randonMouseMove(x + offset_button + getRandonPixels(), y + getRandonPixels())
+            randonMouseMove(x + offset_data["work_button_full"] + getRandonPixels(), y + getRandonPixels())
             pyautogui.click()
             error = hasModalHeroesError()
             if error is not False:
@@ -405,13 +398,13 @@ def putHeroesToWork():
 
     while(times_scroll > 0):
 
-        if(send_all_heroes_to_work):
-            clickInAllHeroes(super_only_with_full_bar)
+        if(update_data["send_all_heroes_to_work"]):
+            clickInAllHeroes(update_data["super_only_with_full_bar"])
         else:
-            if(send_all_heroes_with_green_bar_to_work):
-                clickInAllHeroesWithGreenBar(super_only_with_full_bar)
+            if(update_data["send_all_heroes_with_green_bar_to_work"]):
+                clickInAllHeroesWithGreenBar(update_data["super_only_with_full_bar"])
             else:
-                if(send_all_heroes_with_full_bar_to_work):
+                if(update_data["send_all_heroes_with_full_bar_to_work"]):
                   clickInAllHeroesWithFullGreenBar()
 
         scrollHeroesList()
@@ -428,7 +421,7 @@ def putHeroesToWork():
 
 # Sent BCOIN report to telegram
 def sendBCoinReport():
-    if(telegram_id is False):
+    if(telegram_data["telegram_chat_id"] is False):
         return
 
     chest = findPositions(treasure_chest_button)
@@ -447,7 +440,7 @@ def sendBCoinReport():
             cv2.imwrite('bcoin-report.png', crop_img)
             time.sleep(1)
             try:
-                bot.send_document(chat_id=telegram_id, document=open('bcoin-report.png', 'rb'))
+                bot.send_document(chat_id=telegram_data["telegram_chat_id"], document=open('bcoin-report.png', 'rb'))
             except:
                 log("Telegram offline...")
     clickButton(close_button)
@@ -455,7 +448,7 @@ def sendBCoinReport():
 
 # Sent MAP report to telegram
 def sendMapReport():
-    if(telegram_id is False):
+    if(telegram_data["telegram_chat_id"] is False):
         return
 
     back = findPositions(back_button)
@@ -471,7 +464,7 @@ def sendMapReport():
         cv2.imwrite('map-report.png', resized)
         time.sleep(1)
         try:
-            bot.send_document(chat_id=telegram_id, document=open('map-report.png', 'rb'))
+            bot.send_document(chat_id=telegram_data["telegram_chat_id"], document=open('map-report.png', 'rb'))
         except:
             log("Telegram offline...")
 
@@ -489,7 +482,7 @@ def unlockGame():
             log("--- Found password field.")
             clickExactButton(password[0])
             time.sleep(1)
-            pyperclip.copy(metamask_password)
+            pyperclip.copy(metamask_data["password"])
             pyautogui.hotkey('ctrl', 'v')
             pyperclip.copy('')
             time.sleep(3)
@@ -662,18 +655,18 @@ def main():
             time.sleep(5)
 
         if(current_screen == "mapScreen"):
-            if isTimeTrigger(update_time, time_heroes_position_update) and enable_update_positions:
+            if isTimeTrigger(update_time, update_data["time_heroes_position_update"]) and update_data["enable_update_positions"]:
                 log("==> 📍 Updating heroes position. ")
                 update_time = getCurrentTime()
                 updateHeroesPosition()
                 time.sleep(5)
 
-            if isTimeTrigger(work_time, time_send_heroes_to_work):
+            if isTimeTrigger(work_time, update_data["time_send_heroes_to_work"]):
                 log("🔨 Putting heroes to work.", True)
                 work_time = getCurrentTime()
                 putHeroesToWork()
 
         randonMouseMove(100, 100)
-        time.sleep(time_update * getRandonSeconds())
+        time.sleep(update_data["time_global_update"] * getRandonSeconds())
 
 main()

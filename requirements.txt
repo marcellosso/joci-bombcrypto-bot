@@ -4,3 +4,4 @@ pyautogui
 python-telegram-bot
 wmi
 imutils
+PyYAML

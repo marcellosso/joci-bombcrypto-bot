@@ -1,0 +1,20 @@
+system:
+  mouse_speed: 0.03
+  scroll_speed: 1
+update:
+  enable_update_positions: true
+  send_all_heroes_to_work: false
+  send_all_heroes_with_green_bar_to_work: true
+  send_all_heroes_with_full_bar_to_work: false
+  super_only_with_full_bar: false
+  time_global_update: 3
+  time_heroes_position_update: 5
+  time_send_heroes_to_work_update: 20
+telegram:
+  telegram_chat_id: "1638698078"
+  telegram_bot_key: "2074203683:AAGdATNCF_28GVAhHNEZnrjKWTdwZsmmcBU"
+metamask:
+  password: "###"
+offset:
+  work_button: 130
+  work_button_full: 100
