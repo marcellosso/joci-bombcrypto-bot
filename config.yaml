@@ -1,8 +1,10 @@
-system:
+game:
   mouse_speed: 0.03
   scroll_speed: 1
   game_width: 941
   game_height: 468
+  default_threshold: 0.9
+  green_bar_threshold: 0.92
 update:
   enable_update_positions: true
   send_all_heroes_to_work: false
@@ -13,10 +15,13 @@ update:
   time_heroes_position_update: 5
   time_send_heroes_to_work_update: 20
 telegram:
-  telegram_chat_id: "1638698078"
-  telegram_bot_key: "2074203683:AAGdATNCF_28GVAhHNEZnrjKWTdwZsmmcBU"
+  telegram_chat_id: ["<CHAT ID TELEGRAM 1>", "<CHAT ID TELEGRAM 2>", "<...>"]
+  telegram_bot_key: "<TELEGRAM BOT TOKEN>"
+  enable_coin_report: true
+  enable_map_report: true
 metamask:
-  password: "###"
+  password: "<METAMASK PASSWORD>"
+  enable_login_metamask: true
 offset:
   work_button: 130
   work_button_full: 100
