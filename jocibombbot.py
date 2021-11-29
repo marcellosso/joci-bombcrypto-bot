@@ -85,6 +85,7 @@ f = wmi.WMI()
 
 count_enabled_to_work = 0
 count_login_times = 0
+count_characters_screen_times = 0
 
 ### SYSTEM AREA ##########################################################################################################################
 
@@ -286,19 +287,26 @@ def hasModalHeroesError():
         return error_top
     return False
 
-# Increase heroes to work counter or set False to clear
+# Increase heroes to work counter or set True to clear
 def increaseHeroesToWorkCount(clear = False):
     global count_enabled_to_work
     count_enabled_to_work = count_enabled_to_work + 1
     if clear == True:
         count_enabled_to_work = 0
 
-# Increase heroes to work counter or set False to clear
+# Increase login tries counter or set True to clear
 def increaseLoginCount(clear = False):
     global count_login_times
     count_login_times = count_login_times + 1
     if clear == True:
         count_login_times = 0
+
+# Increase characters screen counter or set True to clear
+def increaseCharactersScreenCount(clear = False):
+    global count_characters_screen_times
+    count_characters_screen_times = count_characters_screen_times + 1
+    if clear == True:
+        count_characters_screen_times = 0
 
 # Click in all available buttons to work
 def clickInAllHeroes(passSuper = False):
@@ -649,10 +657,21 @@ def main():
             time.sleep(5)
 
         if(current_screen == "charaterScreen"):
-            log("⚠️ Character screen found. Changing to map view.")
-            clickButton(close_button)
-            clickButton(treasure_hunt_button)
+            if count_characters_screen_times > 1:
+                log("⛔ Character screen lock. Refreshing and trying to login.", True)
+                increaseCharactersScreenCount(True)
+                refreshScreen()
+                time.sleep(12)
+                loginIntoGame()
+            else:
+                log("⚠️ Character screen found. Changing to map view.")
+                clickButton(close_button)
+                clickButton(treasure_hunt_button)
+                increaseCharactersScreenCount()
             time.sleep(5)
+        else:
+            increaseCharactersScreenCount(True)
+        
 
         if(current_screen == "treasureHuntScreen"):
             log("⚠️ Treasure hunt screen found. Changing to map view.")
@@ -666,7 +685,7 @@ def main():
                 updateHeroesPosition()
                 time.sleep(5)
 
-            if isTimeTrigger(work_time, update_data["time_send_heroes_to_work"]):
+            if isTimeTrigger(work_time, update_data["time_send_heroes_to_work_update"]):
                 log("🔨 Putting heroes to work.", True)
                 work_time = getCurrentTime()
                 putHeroesToWork()
