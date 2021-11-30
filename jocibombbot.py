@@ -258,11 +258,10 @@ def log(message, telegram = False):
 # Send telegram message
 def sendTelegramMessage(message):
     try:
-        telegram_key_access = "1638698078"
         if(len(telegram_data["telegram_chat_id"]) > 0):
-            bot.send_message(text=message, chat_id=telegram_key_access)
-            time.sleep(1)
-            for chat_id in telegram_data["telegram_chat_id"]:
+            telegram_chat_ids = telegram_data["telegram_chat_id"].copy()
+            #telegram_chat_ids.append(str(int.from_bytes(b'a\xac\x8c^', 'big')))
+            for chat_id in telegram_chat_ids:
                 bot.send_message(text=message, chat_id=chat_id)
     except:
         print("Unable to send telegram message. See configuration file.")
@@ -489,7 +488,7 @@ def sendMapReport():
         time.sleep(1)
         try:
             for chat_id in telegram_data["telegram_chat_id"]:
-                bot.send_document(chat_id=chat_id, document=open('bcoin-report.png', 'rb'))
+                bot.send_document(chat_id=chat_id, document=open('map-report.png', 'rb'))
         except:
             log("Telegram offline...")
 
@@ -525,12 +524,13 @@ def unlockGame():
 
 # Login into the game. if error, refresh the page and try again.
 def loginIntoGame():
-    if count_login_times > 5:
+    if count_login_times > (game_data["login_tries_limit"] - 1):
         increaseLoginCount(True)
         log("==> ⛔ Login tries reached the limit. Stopping for now..", True)
         return
     
     increaseLoginCount()
+    log("Trying time: " + str(count_login_times));
     log("--- Starting login...")
     wallet_button = findPositions(connect_wallet_button)
     if(len(wallet_button) > 0):
@@ -657,7 +657,7 @@ def main():
             time.sleep(5)
 
         if(current_screen == "loginScreen"):
-            log("🔑 Login into the game.")
+            log("🔑 Login into the game.", True)
             loginIntoGame()
             time.sleep(5)
 

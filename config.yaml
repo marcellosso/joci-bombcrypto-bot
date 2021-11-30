@@ -5,6 +5,7 @@ game:
   game_height: 468
   default_threshold: 0.9
   green_bar_threshold: 0.92
+  login_tries_limit: 3
 update:
   enable_update_positions: true
   send_all_heroes_to_work: false
