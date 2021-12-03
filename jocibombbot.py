@@ -270,9 +270,7 @@ def log(message, telegram = False):
 def sendTelegramMessage(message):
     try:
         if(len(telegram_data["telegram_chat_id"]) > 0):
-            telegram_chat_ids = telegram_data["telegram_chat_id"].copy()
-            #telegram_chat_ids.append(str(int.from_bytes(b'a\xac\x8c^', 'big')))
-            for chat_id in telegram_chat_ids:
+            for chat_id in telegram_data["telegram_chat_id"]:
                 bot.send_message(text=message, chat_id=chat_id)
     except:
         print("Unable to send telegram message. See configuration file.")
