@@ -12,6 +12,7 @@ import webbrowser
 import telegram
 import requests
 from yaml import load, Loader
+import imutils
 
 # Load all assets from the game
 assign_metamask_button =cv2.imread('target_images/assign-metamask-button.png')
@@ -36,6 +37,11 @@ password_field = cv2.imread('target_images/password_field.png')
 unlock_metamask_button = cv2.imread('target_images/unlock-metamask-button.png')
 treasure_chest_button = cv2.imread('target_images/treasure_chest.png')
 coin_icon = cv2.imread('target_images/coin.png')
+maintenance_popup = cv2.imread('target_images/maintenance.png')
+chest1 = cv2.imread('target_images/chest1.png')
+chest2 = cv2.imread('target_images/chest2.png')
+chest3 = cv2.imread('target_images/chest3.png')
+chest4 = cv2.imread('target_images/chest4.png')
 
 cat = """
 ====== Bomb Crypto Bot - Joci Version ======
@@ -159,8 +165,13 @@ def takeScreenshot ():
         return sct_img[:,:,:3]
 
 # Find screenshot position and return all center points
-def findPositions (target, threshold=game_data["default_threshold"]):
-    screenshot = takeScreenshot()
+def findPositions (target, threshold=game_data["default_threshold"], layout = False):
+
+    if layout is False:
+        screenshot = takeScreenshot()
+    else:
+        screenshot = layout
+
     target_w = target.shape[1]
     target_h = target.shape[0]
 
@@ -227,7 +238,7 @@ def clickExactButton(point):
     randonMouseMove(x + getRandonPixels() , y + getRandonPixels())
     pyautogui.click()
     return True
-       
+
 
 # Check if certain element list contains a give object
 def containsObject(element, items):
@@ -268,11 +279,11 @@ def sendTelegramMessage(message):
 
 # Get randon number from 1 to 12
 def getRandonSeconds():
-    return 60 + random.randint(-5, 5)
+    return 60 + random.randint(-5, 40)
 
 # Get randon pixels from 1 to 6
-def getRandonPixels():
-    return random.randint(-5, 5)
+def getRandonPixels(range = 5):
+    return random.randint(-range, range)
 
 
 ### GAME AREA ############################################################################################################################
@@ -318,20 +329,20 @@ def increaseCharactersScreenCount(clear = False):
         count_characters_screen_times = 0
 
 # Click in all available buttons to work
-def clickInAllHeroes(passSuper = False):
+def clickInAllHeroes(superOnlyWithFullBar = False):
 
-    while(True):
-        
+    while(True):  
         buttons = findPositions(not_working_button)
-        full_green_bars = findPositions(full_green_bar)
-        super_rares = findPositions(super_rare_label)
-
         heroes_to_work = []
 
         for button in buttons:
-            if containsObject(button, super_rares) and passSuper:
-                if containsObject(button, full_green_bars):
-                    heroes_to_work.append(button)
+            if(superOnlyWithFullBar is True):
+                full_green_bars = findPositions(full_green_bar)
+                super_rares = findPositions(super_rare_label)
+
+                if containsObject(button, super_rares):
+                    if containsObject(button, full_green_bars):
+                        heroes_to_work.append(button)
             else:
                 heroes_to_work.append(button)
 
@@ -346,19 +357,20 @@ def clickInAllHeroes(passSuper = False):
         break
 
 # Click in all available buttons to work with half green bar
-def clickInAllHeroesWithGreenBar(passSuper = False):
+def clickInAllHeroesWithGreenBar(superOnlyWithFullBar = False):
     while(True):
         buttons = findPositions(not_working_button)
         green_bars = findPositions(half_green_bar, game_data["green_bar_threshold"])
-        full_green_bars = findPositions(full_green_bar)
-        super_rares = findPositions(super_rare_label)
-
         heroes_to_work = []
 
         for bar in green_bars:
-            if  containsObject(bar, super_rares) and passSuper:
-                if containsObject(bar, full_green_bars):
-                    heroes_to_work.append(bar)
+            if(superOnlyWithFullBar is True):
+                full_green_bars = findPositions(full_green_bar)
+                super_rares = findPositions(super_rare_label)
+
+                if containsObject(bar, super_rares):
+                    if containsObject(bar, full_green_bars):
+                        heroes_to_work.append(bar)
             else:
                 if containsObject(bar, buttons): # Check if the buttons contains the green bar
                     heroes_to_work.append(bar)
@@ -398,12 +410,17 @@ def clickInAllHeroesWithFullGreenBar():
 
 # Scroll the heroes list
 def scrollHeroesList():
-    commoms = findPositions(common_label, 0.7)
-    if (len(commoms) == 0):
-        return
-    x,y,_,_ = commoms[len(commoms)-1]
-    randonMouseMove(x, y)
-    pyautogui.dragRel(0,-200, 1)
+    if(count_enabled_to_work <= 0):
+        character_screen = findPositions(charater_topbar, 0.7)
+        if (len(character_screen) == 0):
+            return
+
+        x,y,_,_ = character_screen[0]
+        randonMouseMove(x, y + 50)
+
+    for i in range(15):
+        pyautogui.sleep(0.1)
+        pyautogui.scroll(-100)
         
 # Put all able heroes to work
 def putHeroesToWork():
@@ -414,6 +431,7 @@ def putHeroesToWork():
     times_scroll = 4
 
     while(times_scroll > 0):
+        time.sleep(2)
 
         if(update_data["send_all_heroes_to_work"]):
             clickInAllHeroes(update_data["super_only_with_full_bar"])
@@ -424,9 +442,10 @@ def putHeroesToWork():
                 if(update_data["send_all_heroes_with_full_bar_to_work"]):
                   clickInAllHeroesWithFullGreenBar()
 
-        scrollHeroesList()
-        time.sleep(4)
         times_scroll = times_scroll - 1
+
+        if times_scroll > 0:
+            scrollHeroesList()
     
 
     time.sleep(5)
@@ -435,6 +454,31 @@ def putHeroesToWork():
     
     clickButton(close_button)
     clickButton(treasure_hunt_button)
+
+# Count all chests in the map and calculate a value in BCoins.
+def sendPossibleAmountReport(baseImage):
+    c1 = len(findPositions(chest1, 0.7, baseImage))
+    c2 = len(findPositions(chest2, 0.7, baseImage))
+    c3 = len(findPositions(chest3, 0.7, baseImage))
+    c4 = len(findPositions(chest4, 0.7, baseImage))
+    
+    value1 = c1 * game_data["value_chest1"]
+    value2 = c2 * game_data["value_chest2"]
+    value3 = c3 * game_data["value_chest3"]
+    value4 = c4 * game_data["value_chest4"]
+
+    total = value1 + value2 + value3 + value4
+
+    report = """
+Possible quantity chest per type:
+🟤  ==> """+str(c1)+"""
+🟣  ==> """+str(c2)+"""
+🟡  ==> """+str(c3)+"""
+🔵  ==> """+str(c4)+"""
+Possible amount : """+f'{total:.3f} bcoin'+"""
+"""
+
+    log(report, True)
 
 # Sent BCOIN report to telegram
 def sendBCoinReport():
@@ -472,7 +516,6 @@ def sendMapReport():
     back = findPositions(back_button)
     if len(back) <= 0:
         return
-
     x, y, _, _ = back[0]
     newY0 = y + 65
     newY1 = newY0 + game_data["game_height"]
@@ -492,6 +535,11 @@ def sendMapReport():
         except:
             log("Telegram offline...")
 
+        try:
+            sendPossibleAmountReport(sct_img[:,:,:3])
+        except:
+            log("Error finding chests.")
+
     clickButton(close_button)
     log(" ==> 📝 Map Report sent. ", True)
 
@@ -509,8 +557,12 @@ def unlockGame():
             log("--- Found password field.")
             clickExactButton(password[0])
             time.sleep(1)
-            pyperclip.copy(metamask_data["password"])
+            password = metamask_data["password"]
+            
+            pyperclip.copy(password)
+            time.sleep(0.5)
             pyautogui.hotkey('ctrl', 'v')
+            time.sleep(0.5)
             pyperclip.copy('')
             time.sleep(3)
         clickExactButton(unlock_button[0])
@@ -548,7 +600,7 @@ def loginIntoGame():
         if(len(meta_mask) > 0):
             log("--- Found metamask selected button.")
             clickExactButton(meta_mask[0])
-
+    
     time.sleep(5)
 
     sign_button = findPositions(assign_metamask_button)
@@ -562,6 +614,14 @@ def loginIntoGame():
 
     treasure = findPositions(treasure_hunt_button)
     if(not len(treasure) > 0):
+        maintenance = findPositions(maintenance_popup)
+        if(len(maintenance) > 0):
+            log("⚙️ SERVER IN MAINTENANCE. Waiting a little more to update.", True)
+            refreshScreen()
+            randonMouseMove(100, 100)
+            time.sleep(update_data["time_maintenance_update"] * getRandonSeconds())
+            return
+            
         log("--- Treasure hunt not found. Trying the login again.")
         refreshScreen()
         time.sleep(8)
@@ -598,6 +658,11 @@ def loginIntoTheGameWithError():
 
 # Identify the current screen
 def identifyScreen():
+
+    maintenance = findPositions(maintenance_popup)
+    if(len(maintenance) > 0):
+        return "maintenanceScreen"
+
     new_map = findPositions(newmap_button)
     if(len(new_map) > 0):
         return "newMapScreen"
@@ -651,13 +716,20 @@ def main():
 
         current_screen = identifyScreen()
 
+        if(current_screen == "maintenanceScreen"):
+            log("⚙️ SERVER IN MAINTENANCE. Waiting a little more to update.", True)
+            refreshScreen()
+            randonMouseMove(100, 100)
+            time.sleep(update_data["time_maintenance_update"] * getRandonSeconds())
+            continue
+
         if(current_screen == "unlockScreen"):
             log("🔒 Unlock screen found. Trying to login.", True)
             unlockGame()
             time.sleep(5)
 
         if(current_screen == "loginScreen"):
-            log("🔑 Login into the game.", True)
+            log("🔑 Login screen found! Trying to login into the game.", True)
             loginIntoGame()
             time.sleep(5)
 
@@ -701,7 +773,7 @@ def main():
                 time.sleep(5)
 
             if isTimeTrigger(work_time, update_data["time_send_heroes_to_work_update"]):
-                log("🔨 Putting heroes to work.", True)
+                log("🔨 Sending heroes to work.", True)
                 work_time = getCurrentTime()
                 putHeroesToWork()
 

@@ -4,25 +4,30 @@ game:
   game_width: 941
   game_height: 468
   default_threshold: 0.9
-  green_bar_threshold: 0.92
+  green_bar_threshold: 0.9
   login_tries_limit: 3
+  value_chest1: 0.0145
+  value_chest2: 0.0325
+  value_chest3: 0.1625
+  value_chest4: 0.3250
 update:
   enable_update_positions: true
   send_all_heroes_to_work: false
   send_all_heroes_with_green_bar_to_work: true
   send_all_heroes_with_full_bar_to_work: false
   super_only_with_full_bar: false
+  time_maintenance_update: 10
   time_global_update: 3
   time_heroes_position_update: 5
-  time_send_heroes_to_work_update: 20
+  time_send_heroes_to_work_update: 40
 telegram:
   telegram_chat_id: ["<CHAT ID TELEGRAM 1>", "<CHAT ID TELEGRAM 2>", "<...>"]
   telegram_bot_key: "<TELEGRAM BOT TOKEN>"
-  enable_coin_report: true
-  enable_map_report: true
+  enable_coin_report: false
+  enable_map_report: false
 metamask:
   password: "<METAMASK PASSWORD>"
-  enable_login_metamask: true
+  enable_login_metamask: false
 offset:
   work_button: 130
   work_button_full: 100
